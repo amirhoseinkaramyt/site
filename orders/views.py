@@ -29,8 +29,7 @@ def order_detail(request, order_id):
             # Check if order status allows adding items?
             # Usually users can add items only if not completed/paid.
             if order.status not in ['PENDING_PRICE', 'AWAITING_PAYMENT']:
-                 # Or maybe just show error message.
-                 pass # For now allow adding items until paid? Let's restrict it later if needed.
+                 return redirect('order_detail', order_id=order.id)
 
             item_form = OrderItemForm(request.POST, request.FILES)
             if item_form.is_valid():
