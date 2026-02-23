@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="jumbotron text-center">
+    <h1 class="display-4">Welcome to Metalworks</h1>
+    <p class="lead">We provide custom metal cutting services.</p>
+    {% if user.is_authenticated %}
+        <p>You are logged in as {{ user.username }}.</p>
+        <a class="btn btn-primary btn-lg" href="#" role="button">Start a New Order</a>
+    {% else %}
+        <p>Please login or register to place an order.</p>
+        <a class="btn btn-primary btn-lg" href="{% url 'register' %}" role="button">Register Now</a>
+        <a class="btn btn-secondary btn-lg" href="{% url 'login' %}" role="button">Login</a>
+    {% endif %}
+</div>
+{% endblock %}

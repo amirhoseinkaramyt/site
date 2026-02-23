@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Your Orders</h2>
+<a href="{% url 'order_create' %}" class="btn btn-primary mb-3">Create New Order</a>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Order #</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Total Price</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in orders %}
+        <tr>
+            <td>{{ order.id }}</td>
+            <td>{{ order.created_at|date:"F d, Y" }}</td>
+            <td>{{ order.get_status_display }}</td>
+            <td>
+                {% if order.current_total_price > 0 %}
+                    {{ order.current_total_price }} Tomans
+                {% else %}
+                    Pending
+                {% endif %}
+            </td>
+            <td><a href="{% url 'order_detail' order.id %}" class="btn btn-sm btn-info">View</a></td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5">No orders found.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

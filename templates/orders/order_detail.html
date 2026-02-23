@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h2>Order #{{ order.id }}</h2>
+        <p><strong>Status:</strong> <span class="badge bg-info text-dark">{{ order.get_status_display }}</span></p>
+        <p><strong>Date:</strong> {{ order.created_at }}</p>
+
+        <h3>Items</h3>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Details</th>
+                    <th>Weight (kg)</th>
+                    <th>Price (Tomans)</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in order.items.all %}
+                <tr>
+                    <td>{{ item.get_item_type_display }}</td>
+                    <td>
+                        {% if item.item_type == 'CIRCLE' or item.item_type == 'SQUARE' %}
+                            Dimension: {{ item.dimension }} mm
+                        {% elif item.item_type == 'MAP' %}
+                            File: <a href="{{ item.map_file.url }}">{{ item.map_file.name }}</a>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.weight|default:"Pending"|floatformat:3 }}</td>
+                    <td>{{ item.price|default:"Pending" }}</td>
+                    <td>
+                        {% if order.status == 'PENDING_PRICE' or order.status == 'AWAITING_PAYMENT' %}
+                        <form method="post" style="display:inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="item_id" value="{{ item.id }}">
+                            <button type="submit" name="delete_item" class="btn btn-sm btn-danger">Delete</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5">No items yet.</td></tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="3" class="text-end">Total Price:</th>
+                    <th>{{ order.current_total_price }} Tomans</th>
+                    <th></th>
+                </tr>
+            </tfoot>
+        </table>
+
+        {% if order.status == 'PENDING_PRICE' or order.status == 'AWAITING_PAYMENT' %}
+        <div class="card mb-4">
+            <div class="card-header">Add Item</div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label>Type</label>
+                        {{ item_form.item_type }}
+                    </div>
+                    <div class="mb-3">
+                        <label>Dimension (mm) - For Circle/Square</label>
+                        {{ item_form.dimension }}
+                    </div>
+                    <div class="mb-3">
+                        <label>Map File (DXF/DWG) - For Map</label>
+                        {{ item_form.map_file }}
+                    </div>
+                    <button type="submit" name="add_item" class="btn btn-success">Add Item</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">Payment</div>
+            <div class="card-body">
+                {% if order.status == 'PENDING_PRICE' %}
+                    <div class="alert alert-warning">
+                        Your order includes custom maps. Please wait for an admin to set the price.
+                    </div>
+                {% elif order.status == 'AWAITING_PAYMENT' %}
+                    <div class="alert alert-primary">
+                        Total Amount Due: <strong>{{ order.current_total_price }} Tomans</strong>
+                    </div>
+                    <p>Please transfer the amount and upload the receipt below.</p>
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            {{ receipt_form.receipt }}
+                        </div>
+                        <button type="submit" name="upload_receipt" class="btn btn-primary">Upload Receipt</button>
+                    </form>
+                {% elif order.status == 'PAYMENT_UPLOADED' %}
+                    <div class="alert alert-info">
+                        Receipt uploaded. Waiting for admin approval.
+                    </div>
+                    {% if order.receipt %}
+                        <img src="{{ order.receipt.url }}" class="img-fluid" alt="Receipt">
+                    {% endif %}
+                {% elif order.status == 'PAID' or order.status == 'PROCESSING' or order.status == 'COMPLETED' %}
+                    <div class="alert alert-success">
+                        Payment Confirmed! Order is being processed.
+                    </div>
+                    {% if order.receipt %}
+                        <a href="{{ order.receipt.url }}" target="_blank">View Receipt</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Simple script to toggle fields based on item type
+    document.addEventListener('DOMContentLoaded', function() {
+        const itemTypeSelect = document.querySelector('#id_item_type');
+        const dimensionField = document.querySelector('#id_dimension').closest('.mb-3');
+        const mapFileField = document.querySelector('#id_map_file').closest('.mb-3');
+
+        function updateFields() {
+            const type = itemTypeSelect.value;
+            if (type === 'MAP') {
+                dimensionField.style.display = 'none';
+                mapFileField.style.display = 'block';
+            } else {
+                dimensionField.style.display = 'block';
+                mapFileField.style.display = 'none';
+            }
+        }
+
+        if (itemTypeSelect) {
+            itemTypeSelect.addEventListener('change', updateFields);
+            updateFields(); // Initial call
+        }
+    });
+</script>
+{% endblock %}
